@@ -1,0 +1,7 @@
+# FastAPI stack for local dev / Pylance (use with requirements-train.txt in the same .venv).
+#   pip install -r requirements-train.txt -r requirements-api.txt
+# For Render-only CPU torch, keep using backend/requirements.txt in CI.
+fastapi>=0.115.0,<1.0.0
+uvicorn[standard]>=0.32.0,<1.0.0
+pydantic>=2.0.0,<3.0.0
+safetensors>=0.4.0

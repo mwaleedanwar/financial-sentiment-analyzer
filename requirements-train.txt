@@ -1,0 +1,7 @@
+# Training stack for train.py (install in a local venv; use PyTorch’s own install for MPS on Mac).
+datasets>=2.14.0
+transformers>=4.45.0,<6.0.0
+accelerate>=0.26.0
+scikit-learn>=1.3.0
+torch>=2.2.0
+numpy>=1.24.0
