@@ -1,0 +1,40 @@
+# Render Blueprint: API + Next.js frontend
+# https://render.com/docs/infrastructure-as-code
+#
+# Apply: Dashboard → New → Blueprint → connect this repo.
+# Deploy the API first; the web app reads the API's public URL via RENDER_EXTERNAL_URL.
+
+services:
+  - type: web
+    name: financial-sentiment-api
+    runtime: python
+    # Pakistan: prefer `singapore` or `frankfurt` over US regions (oregon/ohio/virginia).
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.0"
+
+  - type: web
+    name: financial-sentiment-web
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"
+      # Baked into the Next.js client bundle at build time (must be the public https URL).
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: financial-sentiment-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
