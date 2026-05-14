@@ -41,7 +41,3 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
-financial_model/
-
-# Training checkpoints (large)
-financial_model/trainer_checkpoints/
