@@ -29,7 +29,6 @@ During training, the Hugging Face **Trainer** reports:
 
 - **F1 (macro)** — average F1 across classes with equal weight; highlights performance on **rarer classes** and is a standard choice for **multiclass** problems.
 - **F1 (weighted)** — F1 averaged by **class support**; aligns more closely with **overall accuracy** when classes are imbalanced.
-- **Accuracy** — simple **fraction correct** on the held-out split; easy to interpret for presentations.
 
 **Why these:** Together they give a **balanced view** of quality (macro vs. weighted) plus an **intuitive headline number** (accuracy). The training script uses an **80/20 stratified train–test split** after merging available splits so class proportions stay stable in both partitions.
 
