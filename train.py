@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""
-Phase 1: Fine-tune DistilBERT on Twitter Financial News Sentiment (HF).
-
-Dataset: zeroshot/twitter-financial-news-sentiment
-Labels (numeric): 0 = Negative (Bearish), 1 = Positive (Bullish), 2 = Neutral
-
-Local training dependencies (Apple Silicon / MPS):
-  pip install torch torchvision torchaudio
-  pip install transformers datasets accelerate scikit-learn
-
-Run:
-  python train.py
-"""
 
 from __future__ import annotations
 
@@ -30,27 +17,22 @@ from transformers import (
     TrainingArguments,
 )
 
-# ---------------------------------------------------------------------------
-# Configuration (generic knobs for experiments / presentations)
-# ---------------------------------------------------------------------------
 MODEL_NAME = "distilbert-base-uncased"
 DATASET_ID = "zeroshot/twitter-financial-news-sentiment"
 OUTPUT_DIR = Path(__file__).resolve().parent / "financial_model"
 MAX_LENGTH = 128
-TRAIN_TEST_SPLIT = 0.2  # 20% held out for evaluation → 80% train
+TRAIN_TEST_SPLIT = 0.2
 SEED = 42
 NUM_EPOCHS = 3
 BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 WEIGHT_DECAY = 0.01
 
-# Human-readable labels aligned with dataset ids 0, 1, 2
 ID2LABEL = {0: "Negative", 1: "Positive", 2: "Neutral"}
 LABEL2ID = {v: k for k, v in ID2LABEL.items()}
 
 
 def resolve_device() -> torch.device:
-    """Prefer Apple MPS, then CUDA, else CPU."""
     if torch.backends.mps.is_available():
         return torch.device("mps")
     if torch.cuda.is_available():
@@ -59,7 +41,6 @@ def resolve_device() -> torch.device:
 
 
 def detect_text_column(column_names: list[str]) -> str:
-    """Pick the text field without hard-coding a single dataset revision."""
     for candidate in ("text", "sentence", "tweet", "content", "message"):
         if candidate in column_names:
             return candidate
@@ -74,12 +55,6 @@ def detect_label_column(column_names: list[str]) -> str:
 
 
 def load_merged_splits() -> Dataset:
-    """
-    Load all labeled rows we can find, then apply an 80/20 train-test split locally.
-
-    The upstream dataset often ships `train` + `validation`; we concatenate so the
-    split ratio applies to the full corpus (as requested for the coursework demo).
-    """
     raw: DatasetDict = load_dataset(DATASET_ID)
     pieces = []
     for split_name in ("train", "validation", "test"):
@@ -92,11 +67,6 @@ def load_merged_splits() -> Dataset:
 
 
 def compute_metrics_factory(label_list: list[int]):
-    """
-    Trainer callback: macro-F1 is standard for balanced multi-class reporting;
-    we also return weighted F1 and accuracy for a fuller picture.
-    """
-
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
         preds = np.argmax(logits, axis=-1)
@@ -113,21 +83,16 @@ def main() -> int:
     device = resolve_device()
     print(f"Using device: {device}")
 
-    # ------------------------------------------------------------------
-    # Load data & infer schema
-    # ------------------------------------------------------------------
     full_ds = load_merged_splits()
     text_col = detect_text_column(full_ds.column_names)
     label_col = detect_label_column(full_ds.column_names)
     print(f"Text column: {text_col!r}, label column: {label_col!r}")
 
-    # `stratify_by_column` only works when the label feature is ClassLabel, not Value(int).
-    # This dataset ships labels as plain integers; cast so we can stratify 80/20 safely.
+    # train_test_split(..., stratify_by_column=...) requires ClassLabel, not Value(int).
     if not isinstance(full_ds.features[label_col], ClassLabel):
         class_names = [ID2LABEL[i] for i in range(len(ID2LABEL))]
         full_ds = full_ds.cast_column(label_col, ClassLabel(names=class_names))
 
-    # Stratified split keeps class ratios stable in both partitions
     split = full_ds.train_test_split(
         test_size=TRAIN_TEST_SPLIT,
         seed=SEED,
@@ -145,9 +110,6 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    # ------------------------------------------------------------------
-    # Tokenizer & model
-    # ------------------------------------------------------------------
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME,
@@ -157,7 +119,7 @@ def main() -> int:
     )
 
     def _tok(batch):
-        # Copy labels into the batch *before* `remove_columns` drops the raw fields.
+        # Labels must be copied into the batch before remove_columns drops the label column.
         encoded = tokenizer(
             batch[text_col],
             truncation=True,
@@ -183,7 +145,6 @@ def main() -> int:
         logging_steps=50,
         seed=SEED,
         load_best_model_at_end=False,
-        # MPS/CUDA/CPU: HF Trainer picks MPS automatically on Apple Silicon when use_cpu=False.
         fp16=False,
         bf16=False,
     )
@@ -210,9 +171,6 @@ def main() -> int:
     print(f"Eval F1 (macro):    {f1_macro:.4f}  (coursework target often > 0.85)")
     print(f"Eval F1 (weighted): {f1_weighted:.4f}")
 
-    # ------------------------------------------------------------------
-    # Persist artifacts for FastAPI / deployment
-    # ------------------------------------------------------------------
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     trainer.save_model(str(OUTPUT_DIR))
     tokenizer.save_pretrained(str(OUTPUT_DIR))

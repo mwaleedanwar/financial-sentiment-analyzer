@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base typography tuned for a neutral “corporate” deck aesthetic */
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
 }

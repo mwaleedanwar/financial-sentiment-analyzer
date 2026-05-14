@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Phase 3: Single-page demo for the FastAPI `/predict` endpoint.
- *
- * Configuration:
- *   Set `NEXT_PUBLIC_API_URL` in `.env.local` to your deployed API root, e.g.
- *   https://your-service.onrender.com
- *
- * During local development the default points at localhost:8000 (see `getApiBase`).
- */
-
 import { FormEvent, useMemo, useState } from "react";
 
 type SentimentLabel = "Negative" | "Positive" | "Neutral";
@@ -19,9 +9,26 @@ type PredictResponse = {
   confidence: number;
 };
 
-function getApiBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
-  return raw.replace(/\/$/, "");
+type PredictConfig = {
+  predictUrl: string;
+  displayLabel: string;
+};
+
+function getPredictConfig(): PredictConfig {
+  const useProxy = process.env.NEXT_PUBLIC_USE_VERCEL_PROXY === "1";
+  const directBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+
+  if (useProxy) {
+    return {
+      predictUrl: "/api/predict",
+      displayLabel: "Vercel proxy -> SENTIMENT_API_BASE_URL (ngrok)",
+    };
+  }
+
+  return {
+    predictUrl: `${directBase}/predict`,
+    displayLabel: directBase,
+  };
 }
 
 function sentimentStyles(label: SentimentLabel): string {
@@ -36,10 +43,8 @@ function sentimentStyles(label: SentimentLabel): string {
 }
 
 export default function HomePage() {
-  const apiBase = useMemo(() => getApiBase(), []);
-  const [text, setText] = useState(
-    "Fed signals patience on rate cuts as inflation remains sticky.",
-  );
+  const { predictUrl, displayLabel } = useMemo(() => getPredictConfig(), []);
+  const [text, setText] = useState("Fed signals patience on rate cuts as inflation remains sticky.");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PredictResponse | null>(null);
@@ -50,17 +55,14 @@ export default function HomePage() {
     setResult(null);
     setLoading(true);
     try {
-      const res = await fetch(`${apiBase}/predict`, {
+      const res = await fetch(predictUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       const payload = await res.json().catch(() => null);
       if (!res.ok) {
-        const detail =
-          typeof payload?.detail === "string"
-            ? payload.detail
-            : JSON.stringify(payload?.detail ?? payload);
+        const detail = typeof payload?.detail === "string" ? payload.detail : JSON.stringify(payload?.detail ?? payload);
         throw new Error(detail || `Request failed (${res.status})`);
       }
       setResult(payload as PredictResponse);
@@ -74,25 +76,17 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-16">
       <header className="mb-10 border-b border-slate-200 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-          NLP coursework demo
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-          Financial sentiment classifier
-        </h1>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">NLP coursework demo</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Financial sentiment classifier</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-          Fine-tuned DistilBERT model (3-class: Negative, Positive, Neutral). Enter a
-          finance-related sentence and call the deployed FastAPI service.
+          Fine-tuned DistilBERT model (3-class: Negative, Positive, Neutral). Enter a finance-related sentence and call the deployed FastAPI service.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          API base: <span className="font-mono text-slate-700">{apiBase}</span>
+          API target: <span className="font-mono text-slate-700">{displayLabel}</span>
         </p>
       </header>
 
-      <form
-        onSubmit={onSubmit}
-        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
+      <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <label htmlFor="sentence" className="block text-sm font-medium text-slate-700">
           Financial text
         </label>
@@ -123,10 +117,7 @@ export default function HomePage() {
       </form>
 
       {error && (
-        <section
-          className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900"
-          role="alert"
-        >
+        <section className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900" role="alert">
           <p className="font-medium">Request error</p>
           <p className="mt-1 font-mono text-xs text-rose-800">{error}</p>
         </section>
@@ -134,9 +125,7 @@ export default function HomePage() {
 
       {result && !loading && (
         <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Model output
-          </h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Model output</h2>
           <div
             className={`mt-3 flex flex-col gap-3 rounded-2xl border px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between ${sentimentStyles(result.label)}`}
           >
@@ -146,17 +135,13 @@ export default function HomePage() {
             </div>
             <div className="sm:text-right">
               <p className="text-xs font-medium uppercase text-slate-500">Confidence</p>
-              <p className="text-xl font-semibold tabular-nums">
-                {(result.confidence * 100).toFixed(1)}%
-              </p>
+              <p className="text-xl font-semibold tabular-nums">{(result.confidence * 100).toFixed(1)}%</p>
             </div>
           </div>
         </section>
       )}
 
-      <footer className="mt-auto pt-16 text-center text-xs text-slate-400">
-        Built with Next.js App Router + TailwindCSS · pairs with FastAPI `/predict`
-      </footer>
+      <footer className="mt-auto pt-16 text-center text-xs text-slate-400">Built with Next.js App Router + TailwindCSS · pairs with FastAPI `/predict`</footer>
     </main>
   );
 }
