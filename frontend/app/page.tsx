@@ -31,20 +31,162 @@ function getPredictConfig(): PredictConfig {
   };
 }
 
-function sentimentStyles(label: SentimentLabel): string {
+const SAMPLE_TEXTS = [
+  "Fed signals patience on rate cuts as inflation remains sticky.",
+  "Apple beats earnings expectations; shares rally in after-hours trading.",
+  "Regional bank faces liquidity concerns amid deposit outflows.",
+];
+
+function sentimentTheme(label: SentimentLabel) {
   switch (label) {
     case "Positive":
-      return "border-emerald-200 bg-emerald-50 text-emerald-900";
+      return {
+        card: "border-emerald-500/30 bg-emerald-500/10",
+        badge: "bg-emerald-400/20 text-emerald-300 ring-emerald-400/40",
+        bar: "bg-emerald-400",
+        glow: "shadow-[0_0_40px_-8px_rgba(52,211,153,0.45)]",
+        icon: "↑",
+      };
     case "Negative":
-      return "border-rose-200 bg-rose-50 text-rose-900";
+      return {
+        card: "border-rose-500/30 bg-rose-500/10",
+        badge: "bg-rose-400/20 text-rose-300 ring-rose-400/40",
+        bar: "bg-rose-400",
+        glow: "shadow-[0_0_40px_-8px_rgba(251,113,133,0.45)]",
+        icon: "↓",
+      };
     default:
-      return "border-slate-200 bg-white text-slate-800";
+      return {
+        card: "border-slate-500/30 bg-slate-500/10",
+        badge: "bg-slate-400/20 text-slate-300 ring-slate-400/40",
+        bar: "bg-slate-400",
+        glow: "shadow-[0_0_40px_-8px_rgba(148,163,184,0.35)]",
+        icon: "→",
+      };
   }
+}
+
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
+
+function PageBackground() {
+  return (
+    <>
+      <PageBackgroundBlobs />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: "48px 48px",
+          maskImage: "radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent)",
+        }}
+      />
+    </>
+  );
+}
+
+function PageBackgroundBlobs() {
+  return (
+    <>
+      <div className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
+      <PageBackgroundBlobsRight />
+      <div className="pointer-events-none absolute bottom-0 left-1/2 h-64 w-[32rem] -translate-x-1/2 rounded-full bg-emerald-600/5 blur-3xl" />
+    </>
+  );
+}
+
+function PageBackgroundBlobsRight() {
+  return (
+    <div className="pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-indigo-600/15 blur-3xl" />
+  );
+}
+
+function SampleChips({ text, onPick }: { text: string; onPick: (s: string) => void }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {SAMPLE_TEXTS.map((sample) => (
+        <button
+          key={sample}
+          type="button"
+          onClick={() => onPick(sample)}
+          className={`rounded-lg border px-2.5 py-1 text-left text-xs transition ${
+            text === sample
+              ? "border-amber-400/40 bg-amber-400/10 text-amber-200/90"
+              : "border-white/5 bg-white/[0.03] text-slate-500 hover:border-amber-400/30 hover:bg-amber-400/5 hover:text-amber-200/90"
+          }`}
+        >
+          {sample.slice(0, 42)}…
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ResultCard({
+  theme,
+  label,
+  confidencePct,
+}: {
+  theme: ReturnType<typeof sentimentTheme>;
+  label: SentimentLabel;
+  confidencePct: number;
+}) {
+  return (
+    <div className={`mt-4 overflow-hidden rounded-2xl border p-6 backdrop-blur-sm ${theme.card} ${theme.glow}`}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4">
+          <span
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold ring-1 ${theme.badge}`}
+            aria-hidden
+          >
+            {theme.icon}
+          </span>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Predicted sentiment</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-white">{label}</p>
+          </div>
+        </div>
+        <div className="w-full sm:w-48">
+          <div className="flex items-baseline justify-between">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Confidence</p>
+            <p className="text-2xl font-semibold tabular-nums text-white">{confidencePct}%</p>
+          </div>
+          <ConfidenceBar theme={theme} confidencePct={confidencePct} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfidenceBar({
+  theme,
+  confidencePct,
+}: {
+  theme: ReturnType<typeof sentimentTheme>;
+  confidencePct: number;
+}) {
+  return (
+    <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/40">
+      <div
+        className={`h-full rounded-full transition-all duration-700 ease-out ${theme.bar}`}
+        style={{ width: `${confidencePct}%` }}
+      />
+    </div>
+  );
 }
 
 export default function HomePage() {
   const { predictUrl, displayLabel } = useMemo(() => getPredictConfig(), []);
-  const [text, setText] = useState("Fed signals patience on rate cuts as inflation remains sticky.");
+  const [text, setText] = useState(SAMPLE_TEXTS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PredictResponse | null>(null);
@@ -73,75 +215,117 @@ export default function HomePage() {
     }
   }
 
+  const theme = result ? sentimentTheme(result.label) : null;
+  const confidencePct = result ? Math.round(result.confidence * 1000) / 10 : 0;
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-16">
-      <header className="mb-10 border-b border-slate-200 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">NLP coursework demo</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Financial sentiment classifier</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-          Fine-tuned DistilBERT model (3-class: Negative, Positive, Neutral). Enter a finance-related sentence and call the deployed FastAPI service.
-        </p>
-        <p className="mt-2 text-xs text-slate-500">
-          API target: <span className="font-mono text-slate-700">{displayLabel}</span>
-        </p>
-      </header>
+    <div className="relative min-h-screen overflow-hidden bg-[#070b14] text-slate-100">
+      <PageBackground />
 
-      <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <label htmlFor="sentence" className="block text-sm font-medium text-slate-700">
-          Financial text
-        </label>
-        <textarea
-          id="sentence"
-          name="sentence"
-          rows={4}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 shadow-inner outline-none ring-brand-500 transition focus:border-brand-500 focus:bg-white focus:ring-2"
-          placeholder="Paste a headline, tweet, or filing snippet…"
-        />
-
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={loading || !text.trim()}
-            className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {loading ? "Scoring…" : "Predict sentiment"}
-          </button>
-          {loading && (
-            <span className="text-sm text-slate-500" aria-live="polite">
-              Calling model API…
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-2xl flex-col px-5 py-12 sm:px-6 sm:py-16">
+        <header className="mb-10">
+          <HeaderBadge />
+          <h1 className="mt-5 font-[family-name:var(--font-serif)] text-4xl font-medium tracking-tight text-white sm:text-5xl">
+            Financial sentiment
+            <span className="block bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+              classifier
             </span>
-          )}
-        </div>
-      </form>
+          </h1>
+          <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-400">
+            Fine-tuned DistilBERT · Negative, Positive, Neutral. Paste a headline, tweet, or filing snippet and score it live.
+          </p>
+        </header>
 
-      {error && (
-        <section className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900" role="alert">
-          <p className="font-medium">Request error</p>
-          <p className="mt-1 font-mono text-xs text-rose-800">{error}</p>
-        </section>
-      )}
-
-      {result && !loading && (
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Model output</h2>
-          <div
-            className={`mt-3 flex flex-col gap-3 rounded-2xl border px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between ${sentimentStyles(result.label)}`}
-          >
-            <div>
-              <p className="text-xs font-medium uppercase text-slate-500">Predicted sentiment</p>
-              <p className="text-2xl font-semibold">{result.label}</p>
-            </div>
-            <div className="sm:text-right">
-              <p className="text-xs font-medium uppercase text-slate-500">Confidence</p>
-              <p className="text-xl font-semibold tabular-nums">{(result.confidence * 100).toFixed(1)}%</p>
-            </div>
+        <form
+          onSubmit={onSubmit}
+          className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-7"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor="sentence" className="text-sm font-medium text-slate-300">
+              Financial text
+            </label>
+            <span className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+              {text.length} chars
+            </span>
           </div>
-        </section>
-      )}
 
-      <footer className="mt-auto pt-16 text-center text-xs text-slate-400">Built with Next.js App Router + TailwindCSS · pairs with FastAPI `/predict`</footer>
-    </main>
+          <textarea
+            id="sentence"
+            name="sentence"
+            rows={5}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="mt-3 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm leading-relaxed text-slate-100 placeholder:text-slate-600 outline-none transition focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
+            placeholder="Paste a headline, tweet, or filing snippet…"
+          />
+
+          <SampleChips text={text} onPick={setText} />
+
+          <div className="mt-6 flex flex-wrap items-center gap-4">
+            <button
+              type="submit"
+              disabled={loading || !text.trim()}
+              className="group relative inline-flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-900/30 transition hover:from-amber-400 hover:to-amber-500 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400 disabled:shadow-none"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {loading ? (
+                  <>
+                    <Spinner />
+                    Scoring…
+                  </>
+                ) : (
+                  <>
+                    Predict sentiment
+                    <span className="transition group-hover:translate-x-0.5" aria-hidden>
+                      →
+                    </span>
+                  </>
+                )}
+              </span>
+            </button>
+            {loading && (
+              <span className="text-sm text-slate-500" aria-live="polite">
+                Calling model API…
+              </span>
+            )}
+          </div>
+        </form>
+
+        {error && (
+          <section
+            className="mt-6 rounded-xl border border-rose-500/30 bg-rose-950/50 px-4 py-3.5 backdrop-blur-sm"
+            role="alert"
+          >
+            <p className="text-sm font-medium text-rose-300">Request error</p>
+            <p className="mt-1.5 font-mono text-xs leading-relaxed text-rose-200/80">{error}</p>
+          </section>
+        )}
+
+        {result && !loading && theme && (
+          <section className="mt-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Model output</p>
+            <ResultCard theme={theme} label={result.label} confidencePct={confidencePct} />
+          </section>
+        )}
+
+        <footer className="mt-auto pt-14 text-center text-[11px] text-slate-600">
+          Next.js · Tailwind · FastAPI <code className="text-slate-500">/predict</code>
+          <span className="mx-1.5 text-slate-700">·</span>
+          <span className="font-mono text-slate-500">{displayLabel}</span>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+function HeaderBadge() {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-200/90">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
+      </span>
+      DistilBERT · 3-class NLP demo
+    </div>
   );
 }
