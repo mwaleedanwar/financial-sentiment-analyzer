@@ -2,12 +2,29 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-type SentimentLabel = "Negative" | "Positive" | "Neutral";
+type ApiSentimentLabel = "Negative" | "Positive" | "Neutral";
+type DisplaySentimentLabel = "Bull" | "Bear" | "Neutral";
 
 type PredictResponse = {
-  label: SentimentLabel;
+  label: ApiSentimentLabel;
   confidence: number;
 };
+
+type DisplayResult = {
+  label: DisplaySentimentLabel;
+  confidence: number;
+};
+
+function toDisplayLabel(label: ApiSentimentLabel): DisplaySentimentLabel {
+  switch (label) {
+    case "Positive":
+      return "Bear";
+    case "Negative":
+      return "Bull";
+    default:
+      return "Neutral";
+  }
+}
 
 type PredictConfig = {
   predictUrl: string;
@@ -37,9 +54,9 @@ const SAMPLE_TEXTS = [
   "Regional bank faces liquidity concerns amid deposit outflows.",
 ];
 
-function sentimentTheme(label: SentimentLabel) {
+function sentimentTheme(label: DisplaySentimentLabel) {
   switch (label) {
-    case "Positive":
+    case "Bear":
       return {
         card: "border-emerald-500/30 bg-emerald-500/10",
         badge: "bg-emerald-400/20 text-emerald-300 ring-emerald-400/40",
@@ -47,7 +64,7 @@ function sentimentTheme(label: SentimentLabel) {
         glow: "shadow-[0_0_40px_-8px_rgba(52,211,153,0.45)]",
         icon: "↑",
       };
-    case "Negative":
+    case "Bull":
       return {
         card: "border-rose-500/30 bg-rose-500/10",
         badge: "bg-rose-400/20 text-rose-300 ring-rose-400/40",
@@ -129,7 +146,7 @@ function SampleChips({ text, onPick }: { text: string; onPick: (s: string) => vo
   );
 }
 
-function ResultCard({ theme, label, confidencePct }: { theme: ReturnType<typeof sentimentTheme>; label: SentimentLabel; confidencePct: number }) {
+function ResultCard({ theme, label, confidencePct }: { theme: ReturnType<typeof sentimentTheme>; label: DisplaySentimentLabel; confidencePct: number }) {
   return (
     <div className={`mt-4 overflow-hidden rounded-2xl border p-6 backdrop-blur-sm ${theme.card} ${theme.glow}`}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -167,7 +184,7 @@ export default function HomePage() {
   const [text, setText] = useState(SAMPLE_TEXTS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<PredictResponse | null>(null);
+  const [result, setResult] = useState<DisplayResult | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -185,7 +202,8 @@ export default function HomePage() {
         const detail = typeof payload?.detail === "string" ? payload.detail : JSON.stringify(payload?.detail ?? payload);
         throw new Error(detail || `Request failed (${res.status})`);
       }
-      setResult(payload as PredictResponse);
+      const api = payload as PredictResponse;
+      setResult({ label: toDisplayLabel(api.label), confidence: api.confidence });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -208,7 +226,7 @@ export default function HomePage() {
             <span className="block bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">classifier</span>
           </h1>
           <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-400">
-            Fine-tuned DistilBERT · Negative, Positive, Neutral. Paste a headline, tweet, or filing snippet and score it live.
+            Fine-tuned DistilBERT · Bull, Bear, Neutral. Paste a headline, tweet, or filing snippet and score it live.
           </p>
         </header>
 
