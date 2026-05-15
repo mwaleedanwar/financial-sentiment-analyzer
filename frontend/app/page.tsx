@@ -2,29 +2,12 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-type ApiSentimentLabel = "Negative" | "Positive" | "Neutral";
-type DisplaySentimentLabel = "Bull" | "Bear" | "Neutral";
+type SentimentLabel = "Bull" | "Bear" | "Neutral";
 
 type PredictResponse = {
-  label: ApiSentimentLabel;
+  label: SentimentLabel;
   confidence: number;
 };
-
-type DisplayResult = {
-  label: DisplaySentimentLabel;
-  confidence: number;
-};
-
-function toDisplayLabel(label: ApiSentimentLabel): DisplaySentimentLabel {
-  switch (label) {
-    case "Positive":
-      return "Bear";
-    case "Negative":
-      return "Bull";
-    default:
-      return "Neutral";
-  }
-}
 
 type PredictConfig = {
   predictUrl: string;
@@ -54,7 +37,7 @@ const SAMPLE_TEXTS = [
   "Regional bank faces liquidity concerns amid deposit outflows.",
 ];
 
-function sentimentTheme(label: DisplaySentimentLabel) {
+function sentimentTheme(label: SentimentLabel) {
   switch (label) {
     case "Bear":
       return {
@@ -146,7 +129,7 @@ function SampleChips({ text, onPick }: { text: string; onPick: (s: string) => vo
   );
 }
 
-function ResultCard({ theme, label, confidencePct }: { theme: ReturnType<typeof sentimentTheme>; label: DisplaySentimentLabel; confidencePct: number }) {
+function ResultCard({ theme, label, confidencePct }: { theme: ReturnType<typeof sentimentTheme>; label: SentimentLabel; confidencePct: number }) {
   return (
     <div className={`mt-4 overflow-hidden rounded-2xl border p-6 backdrop-blur-sm ${theme.card} ${theme.glow}`}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -184,7 +167,7 @@ export default function HomePage() {
   const [text, setText] = useState(SAMPLE_TEXTS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<DisplayResult | null>(null);
+  const [result, setResult] = useState<PredictResponse | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -202,8 +185,7 @@ export default function HomePage() {
         const detail = typeof payload?.detail === "string" ? payload.detail : JSON.stringify(payload?.detail ?? payload);
         throw new Error(detail || `Request failed (${res.status})`);
       }
-      const api = payload as PredictResponse;
-      setResult({ label: toDisplayLabel(api.label), confidence: api.confidence });
+      setResult(payload as PredictResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
