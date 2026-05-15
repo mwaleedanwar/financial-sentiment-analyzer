@@ -105,9 +105,7 @@ function PageBackgroundBlobs() {
 }
 
 function PageBackgroundBlobsRight() {
-  return (
-    <div className="pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-indigo-600/15 blur-3xl" />
-  );
+  return <div className="pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-indigo-600/15 blur-3xl" />;
 }
 
 function SampleChips({ text, onPick }: { text: string; onPick: (s: string) => void }) {
@@ -131,23 +129,12 @@ function SampleChips({ text, onPick }: { text: string; onPick: (s: string) => vo
   );
 }
 
-function ResultCard({
-  theme,
-  label,
-  confidencePct,
-}: {
-  theme: ReturnType<typeof sentimentTheme>;
-  label: SentimentLabel;
-  confidencePct: number;
-}) {
+function ResultCard({ theme, label, confidencePct }: { theme: ReturnType<typeof sentimentTheme>; label: SentimentLabel; confidencePct: number }) {
   return (
     <div className={`mt-4 overflow-hidden rounded-2xl border p-6 backdrop-blur-sm ${theme.card} ${theme.glow}`}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
-          <span
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold ring-1 ${theme.badge}`}
-            aria-hidden
-          >
+          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold ring-1 ${theme.badge}`} aria-hidden>
             {theme.icon}
           </span>
           <div>
@@ -167,25 +154,16 @@ function ResultCard({
   );
 }
 
-function ConfidenceBar({
-  theme,
-  confidencePct,
-}: {
-  theme: ReturnType<typeof sentimentTheme>;
-  confidencePct: number;
-}) {
+function ConfidenceBar({ theme, confidencePct }: { theme: ReturnType<typeof sentimentTheme>; confidencePct: number }) {
   return (
     <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/40">
-      <div
-        className={`h-full rounded-full transition-all duration-700 ease-out ${theme.bar}`}
-        style={{ width: `${confidencePct}%` }}
-      />
+      <div className={`h-full rounded-full transition-all duration-700 ease-out ${theme.bar}`} style={{ width: `${confidencePct}%` }} />
     </div>
   );
 }
 
 export default function HomePage() {
-  const { predictUrl, displayLabel } = useMemo(() => getPredictConfig(), []);
+  const { predictUrl } = useMemo(() => getPredictConfig(), []);
   const [text, setText] = useState(SAMPLE_TEXTS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -227,26 +205,19 @@ export default function HomePage() {
           <HeaderBadge />
           <h1 className="mt-5 font-[family-name:var(--font-serif)] text-4xl font-medium tracking-tight text-white sm:text-5xl">
             Financial sentiment
-            <span className="block bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
-              classifier
-            </span>
+            <span className="block bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">classifier</span>
           </h1>
           <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-400">
             Fine-tuned DistilBERT · Negative, Positive, Neutral. Paste a headline, tweet, or filing snippet and score it live.
           </p>
         </header>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-7"
-        >
+        <form onSubmit={onSubmit} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-7">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor="sentence" className="text-sm font-medium text-slate-300">
               Financial text
             </label>
-            <span className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">
-              {text.length} chars
-            </span>
+            <span className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">{text.length} chars</span>
           </div>
 
           <textarea
@@ -292,10 +263,7 @@ export default function HomePage() {
         </form>
 
         {error && (
-          <section
-            className="mt-6 rounded-xl border border-rose-500/30 bg-rose-950/50 px-4 py-3.5 backdrop-blur-sm"
-            role="alert"
-          >
+          <section className="mt-6 rounded-xl border border-rose-500/30 bg-rose-950/50 px-4 py-3.5 backdrop-blur-sm" role="alert">
             <p className="text-sm font-medium text-rose-300">Request error</p>
             <p className="mt-1.5 font-mono text-xs leading-relaxed text-rose-200/80">{error}</p>
           </section>
@@ -308,11 +276,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <footer className="mt-auto pt-14 text-center text-[11px] text-slate-600">
-          Next.js · Tailwind · FastAPI <code className="text-slate-500">/predict</code>
-          <span className="mx-1.5 text-slate-700">·</span>
-          <span className="font-mono text-slate-500">{displayLabel}</span>
-        </footer>
+        <footer className="mt-auto pt-14 text-center text-[11px] text-slate-600">Next.js | Tailwind | FastAPI</footer>
       </main>
     </div>
   );
